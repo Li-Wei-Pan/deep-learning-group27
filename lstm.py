@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import matplotlib.pyplot as plt
 
 # ----------- LOAD, TRAIN, SPLIT DATA ------------
 
@@ -192,3 +194,25 @@ recursive_scaled = predict_recursion(final_lstm, x_train_scaled, window_size=bes
 predictions_final = scaler.inverse_transform(recursive_scaled.reshape(-1,1))
 
 # -------------------------- FIND MAE AND MSE ------------------------------------
+
+# print(f"predictions_final", predictions_final) #check prediction final
+
+def calculate_error(predictions, actual):
+    mae = mean_absolute_error(actual, predictions)
+    mse = mean_squared_error(actual, predictions)
+
+    print(f'Mean Absolute Error: {mae: .5f}')
+    
+    print(f'Mean Squared Error: {mse: .5f}')
+
+    plt.figure(figsize = (12,5))
+    plt.plot(actual, label = 'Real measurement', color = 'skyblue')
+    plt.plot(predictions, label = 'Recursive prediction', color = 'red', linestyle = '--')
+    plt.xlabel('time stamps')
+    plt.ylabel('value')
+    plt.title('LSTM Laser predictions vs Real values')
+    plt.legend()
+    plt.show()
+
+x_test_original = scaler.inverse_transform(x_test_scaled.reshape(-1,1))
+calculate_error(predictions_final, x_test_original)
