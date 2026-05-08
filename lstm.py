@@ -9,18 +9,22 @@ import matplotlib.pyplot as plt
 # ----------- LOAD, TRAIN, SPLIT DATA ------------
 
 x = loadmat('Xtrain.mat')
+x_final = loadmat('Xtest.mat')
+x_test_vals = x_final['Xtest']
 
 # Train and val size etc. subject to change
-x_train = x["Xtrain"][:800]
-x_test = x["Xtrain"][800:] # Added when test set is released
+x_train = x["Xtrain"]
+# x_test = x["Xtrain"][800:] # Added when test set is released
 
 # Scale the data
 scaler = StandardScaler()
 x_train_2d = np.array(x_train).reshape(-1, 1)
-x_test_2d = np.array(x_test).reshape(-1, 1)
+
 # Fit and transform
 x_train_scaled = scaler.fit_transform(x_train_2d).flatten()
-x_test_scaled = scaler.transform(x_test_2d).flatten()
+
+#actual_test_vals = x_final['Xtest'].flatten() # extract Xtest vals 
+# print(f'actual_vals: {actual_test_vals}')
 
 # --------------- DEFINE LSTM --------------
 
@@ -155,14 +159,17 @@ best_final_window = find_optional_hyperparameters(window_options=[5,10,20,30,50]
 def get_final_trained_model(x_scaled, window_size, hidden = 64):
     
     X_all , y_all = create_sequences(x_scaled, window_size)
+    n_val = int(len(X_all)*0.15)
 
-    X_t = torch.FloatTensor(X_all).unsqueeze(-1)
-    y_t = torch.FloatTensor(y_all)
+    X_t = torch.FloatTensor(X_all[:-n_val]).unsqueeze(-1)
+    y_t = torch.FloatTensor(y_all[: -n_val])
+    X_v = torch.FloatTensor(X_all[-n_val: ]).unsqueeze(-1)
+    y_v = torch.FloatTensor(y_all[-n_val: ])
 
     #Initialize final model
-    final_model = LSTMModel(hidden_size=64)
+    final_model = LSTMModel(hidden_size=hidden)
     print("Starting Final Training on full dataset")
-    train_model(final_model, X_t, y_t, X_t, y_t, epochs=150)
+    train_model(final_model, X_t, y_t, X_v, y_v, epochs=150)
     print("Final Model Ready")
     return final_model
 
@@ -214,5 +221,7 @@ def calculate_error(predictions, actual):
     plt.legend()
     plt.show()
 
-x_test_original = scaler.inverse_transform(x_test_scaled.reshape(-1,1))
-calculate_error(predictions_final, x_test_original)
+#x_test_original = scaler.inverse_transform(x_test_scaled.reshape(-1,1))
+actual_test_vals = x_final['Xtest'].flatten().astype(float)
+
+calculate_error(predictions_final, actual_test_vals)
