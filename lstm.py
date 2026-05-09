@@ -79,7 +79,6 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=200, patience=15):
 
 # Here you go amogh you got this
 #Thank you pookie
-window_size = 10
 
 # ----------------- SPLIT DATA  ACCORDING TO EXPANDING WINDOW SPLIT AND SEQUENCE ACCORDING TO WINDOW SIZE --------------------------
 # https://medium.com/@mouadenna/time-series-splitting-techniques-ensuring-accurate-model-validation-5a3146db3088
@@ -153,7 +152,7 @@ def find_optional_hyperparameters(window_options):
     print(f"Optimial window size fouund: {best_window}")
     return best_window
 
-best_final_window = find_optional_hyperparameters(window_options=[5,10,20,30,50])
+#best_final_window = find_optional_hyperparameters(window_options=[5,10,20,30,50])
 
 # -------------------- TRAIN MODEL -------------------------------------------------
 def get_final_trained_model(x_scaled, window_size, hidden = 64):
@@ -173,7 +172,7 @@ def get_final_trained_model(x_scaled, window_size, hidden = 64):
     print("Final Model Ready")
     return final_model
 
-final_lstm = get_final_trained_model(x_train_scaled, window_size= best_final_window)
+final_lstm = get_final_trained_model(x_train_scaled, window_size= 30)
 
 # ------------------------- PREDICT NEXT 200 STEPS -------------------------------
 def predict_recursion(model, data_source, window_size, steps = 200):
@@ -181,7 +180,7 @@ def predict_recursion(model, data_source, window_size, steps = 200):
     predictions = []
 
     #Start with last window of known data
-    current_window = torch.FloatTensor(data_source[-window_size:]).view(1, -1, 1)
+    current_window = torch.FloatTensor(data_source[-window_size:]).view(1, window_size, 1)
     
     with torch.no_grad():
         for _ in range(steps):
@@ -196,7 +195,7 @@ def predict_recursion(model, data_source, window_size, steps = 200):
 
     return np.array(predictions)
 
-recursive_scaled = predict_recursion(final_lstm, x_train_scaled, window_size=best_final_window)
+recursive_scaled = predict_recursion(final_lstm, x_train_scaled, window_size=30)
 
 predictions_final = scaler.inverse_transform(recursive_scaled.reshape(-1,1))
 
@@ -205,6 +204,8 @@ predictions_final = scaler.inverse_transform(recursive_scaled.reshape(-1,1))
 # print(f"predictions_final", predictions_final) #check prediction final
 
 def calculate_error(predictions, actual):
+    predictions = predictions.flatten()
+    actual = actual.flatten()
     mae = mean_absolute_error(actual, predictions)
     mse = mean_squared_error(actual, predictions)
 
